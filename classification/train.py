@@ -122,11 +122,14 @@ def training(args):
 
         if valid_acc > best_val_acc :
             try:
-                before_best = glob.glob(f'{args.ckpt_dir}/best_*')[0]
+                before_best = glob.glob(os.path.join(args.ckpt_dir,'best*'))[0]
+                # before_best = glob.glob(f'{args.ckpt_dir}/best_*')[0]
                 os.remove(before_best)
             except:
                 pass
-            torch.save(model.state_dict(),f'{args.ckpt_dir}/best_{e}.pth')
+            torch.save(model.state_dict(),os.path.join(args.ckpt_dir,f'best_{e}.pth'))
+            # torch.save(model.state_dict(),f'{args.ckpt_dir}/best_{e}.pth')
+        torch.save(model.state_dict(),os.path.join(args.ckpt_dir,f'epoch_{e}.pth'))
         torch.save(model.state_dict(),f'{args.ckpt_dir}/epoch_{e}.pth')
 
 
