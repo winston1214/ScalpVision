@@ -16,8 +16,11 @@
 - 탈모 -> hair_loss (value_6)
 ```
 - Merge
+
 ```python merge_label.py --file_path data --csv_file train_label.csv```
+
 ```python merge_label.py --file_path data --csv_file val_label.csv```
+
 ```python merge_label.py --file_path data --csv_file test_label.csv```
 
 => output : data/merge_train_label.csv, data/merge_val_label.csv, data/merge_test_label.csv
