@@ -52,7 +52,7 @@ def training(args):
 
 
     vit_model = timm.create_model('resnet50',pretrained=True)
-    num_classes = 12
+    num_classes = 6
     model = ViT_MCMC(vit_model,num_classes).to(device)
 
     BATCH_SIZE = args.batch_size
