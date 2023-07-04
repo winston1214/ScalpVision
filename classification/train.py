@@ -130,6 +130,7 @@ def training(args):
 
         if valid_acc > best_val_acc :
             try:
+                best_val_acc = valid_acc
                 before_best = glob.glob(f'{args.save_dir}/best_*')[0]
                 os.remove(before_best)
             except:
