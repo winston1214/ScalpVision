@@ -1,5 +1,10 @@
 # scalp_diagnosis
 
+## Installation
+```
+pip install requirements.txt
+```
+If you occur "module not found error", please call @winston1214
 
 ## Dataset
 
