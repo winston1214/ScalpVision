@@ -4,7 +4,7 @@
 ```
 pip install requirements.txt
 ```
-If you occur "module not found error", please call @winston1214
+If you occur "module not found error", please contact @winston1214
 
 ## Dataset
 
