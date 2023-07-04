@@ -8,6 +8,7 @@ import argparse
 import numpy as np
 import warnings
 from sklearn.metrics import f1_score
+import shutil
 
 import torch
 import torch.nn as nn
@@ -27,6 +28,13 @@ random_seed(42)
 def training(args):
     device = args.device
     DATA_DIR = args.data_dir
+    
+    if os.path.exists(args.save_dir):
+        remove_cmd = input("remove? y or n")
+        if remove_cmd == 'y' or remove_cmd == 'yes':
+            shutil.rmtree(args.save_dir)
+    os.makedirs(args.save_dir,exist_ok = True)
+    
     train_img_path = os.path.join(DATA_DIR,'train','images')
     val_img_path = os.path.join(DATA_DIR,'val','images')
 
@@ -38,13 +46,13 @@ def training(args):
         T.Resize((224,224)),
         T.Normalize([49.307, 51.166, 48.442],[74.02 , 76.705, 73.786])
     ])
-
+    
     train_dataset = ScalpDataset(DATA_DIR,train_img_data,'train',transformation)
     valid_dataset = ScalpDataset(DATA_DIR,valid_img_data,'val',transformation)
 
 
     vit_model = timm.create_model('resnet50',pretrained=True)
-    num_classes = 6
+    num_classes = 12
     model = ViT_MCMC(vit_model,num_classes).to(device)
 
     BATCH_SIZE = args.batch_size
@@ -122,15 +130,12 @@ def training(args):
 
         if valid_acc > best_val_acc :
             try:
-                before_best = glob.glob(os.path.join(args.ckpt_dir,'best*'))[0]
-                # before_best = glob.glob(f'{args.ckpt_dir}/best_*')[0]
+                before_best = glob.glob(f'{args.save_dir}/best_*')[0]
                 os.remove(before_best)
             except:
                 pass
-            torch.save(model.state_dict(),os.path.join(args.ckpt_dir,f'best_{e}.pth'))
-            # torch.save(model.state_dict(),f'{args.ckpt_dir}/best_{e}.pth')
-        torch.save(model.state_dict(),os.path.join(args.ckpt_dir,f'epoch_{e}.pth'))
-        torch.save(model.state_dict(),f'{args.ckpt_dir}/epoch_{e}.pth')
+            torch.save(model.state_dict(),f'{args.save_dir}/best_{e}.pth')
+        torch.save(model.state_dict(),f'{args.save_dir}/epoch_{e}.pth')
 
 
 
@@ -141,7 +146,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size',type=int,default = 16)
     parser.add_argument('--device',type=str,default='cuda:0')
     parser.add_argument('--epoch',type=int,default = 50)
-    parser.add_argument('--save_dir',type=str,default = 'ckpt/')
+    parser.add_argument('--save_dir',type=str)
     args = parser.parse_args()
     training(args)
 
