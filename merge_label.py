@@ -11,9 +11,9 @@ def merge_label(args):
 
     data = data.drop('value_6',axis=1)
 
-    data.drop(['value_1','value_2','value_4','value_5'],axis=1,inplace = True)
+    data.drop(['value_1','value_3','value_4','value_5'],axis=1,inplace = True)
     data['value_1'] = micro_dand
-    data['value_2'] = ery_pus
+    data['value_3'] = ery_pus
 
     data.to_csv(os.path.join(args.file_path,'merge_'+args.csv_file))
     # data.to_csv(f'../scalp_aihub/merge_{args.csv_file}.csv',index=False)
