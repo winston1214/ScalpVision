@@ -30,7 +30,7 @@ def training(args):
     DATA_DIR = args.data_dir
     
     if os.path.exists(args.save_dir):
-        remove_cmd = input("remove? y or n")
+        remove_cmd = input("remove? y or n : ")
         if remove_cmd == 'y' or remove_cmd == 'yes':
             shutil.rmtree(args.save_dir)
     os.makedirs(args.save_dir,exist_ok = True)
