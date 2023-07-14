@@ -95,6 +95,7 @@ for coor in white_regions:
     region_pixels = result[y1:y2, x1:x2]
     sum_value = np.sum(region_pixels)
     sum_values.append(sum_value)
+    
 
     #the width of the bounding box = thickness???
     # cv.putText(result, str(thickness), (region[0], region[1] - 5),
