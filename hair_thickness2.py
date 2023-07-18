@@ -136,7 +136,6 @@ def get_direction(bbox_pixels):
     else:
         return (0, 0)  # No direction
     
-    
 for coor in white_regions:
     x1, y1, x2, y2 = coor
     center_x = (x1 + x2) // 2
@@ -149,21 +148,20 @@ for coor in white_regions:
     # Calculate the direction using PCA for the white pixels within the bounding box
     direction = get_direction(bbox_pixels)
     directions.append(direction)
-    
+print(np.size(directions))     
 
 thicknesses = []
-slope = []
 perpendicular_slope = []
 
 for direction, ctpt in zip(directions, center_points):
     cx, cy = ctpt
     # Calculate the slope of the direction vector
     if direction[1] != 0:
-        slope.append(-direction[0] / direction[1])
-        perpendicular_slope.append(-1 / (-direction[0] / direction[1]))
+        perpendicular_slope.append(-1/(direction[0] / direction[1]))
     else:
-       pass
-    
+        perpendicular_slope.append(0)  # Perpendicular slope is 0 for vertical direction
+        
+print(np.size(perpendicular_slope))   
 # Calculate intersection points and thickness for each 'center point'
 for center_point, perp_slope in zip(center_points, perpendicular_slope):
     cx, cy = center_point
@@ -191,7 +189,6 @@ for center_point, perp_slope in zip(center_points, perpendicular_slope):
 
 # print('avg_thickenss', avg_thickness)
 # print(directions)
-print(np.size(perpendicular_slope))
 
 cv2.imshow('bbox,centerpt_image', skeleton_image)
 cv2.waitKey(0)

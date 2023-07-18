@@ -8,7 +8,6 @@ def nms(boxes, thresh):
         return []
 
     pick = []
-
     x1 = boxes[:, 0]
     y1 = boxes[:, 1]
     x2 = boxes[:, 2]
