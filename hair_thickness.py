@@ -1,22 +1,22 @@
-import cv2 as cv
+import cv2
 import numpy as np
-import os
+
+#hyperparameter: threshold, filter size, area to cover
 
 def nms(boxes, thresh):
     if len(boxes) == 0:
         return []
 
     pick = []
-    
-    #coordinate
+
     x1 = boxes[:, 0]
     y1 = boxes[:, 1]
     x2 = boxes[:, 2]
     y2 = boxes[:, 3]
-    
+
     area = (x2 - x1 + 1) * (y2 - y1 + 1)
     idxs = np.argsort(y2)
-    
+
     while len(idxs) > 0:
         last = len(idxs) - 1
         i = idxs[last]
@@ -35,83 +35,75 @@ def nms(boxes, thresh):
         idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > thresh)[0])))
 
     return boxes[pick]
-    
-#pre-process
-img_path = "results/0335_A2LEBJJDE00013X_1602916465540_6_BH.png"
 
-# 여러이미지 테스트 코드 ..ing
-# results_folder = "results"
-# for images in os.listdir(results_folder) in range(10):
-#     im
-    
+# Pre-process
+img_path = "results/0616_A2LEBJJDE00004W_1606017745245_2_TH.png"
 
-img = cv.imread(img_path)
+img = cv2.imread(img_path)
+imgray = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 
-imgray = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
+# Apply threshold
+ret, binary_map = cv2.threshold(imgray, 127, 255, 0)
 
-#apply threshold
-ret, binary_map = cv.threshold(imgray,127,255,0)
+nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_map, None, None, None, 8, cv2.CV_32S)
 
-nlabels, labels, stats, centroids = cv.connectedComponentsWithStats(binary_map, None, None, None, 8, cv.CV_32S)
-
-#get CC_STAT_AREA component as stats[label, COLUMN] 
-areas = stats[1:,cv.CC_STAT_AREA]
+# Get CC_STAT_AREA component as stats[label, COLUMN]
+areas = stats[1:, cv2.CC_STAT_AREA]
 
 result = np.zeros((labels.shape), np.uint8)
 
-#get rid of noises(ex. big white spots that are not hair)
-for i in range(0, nlabels - 1): 
-    if areas[i] >= 300:   #keep
+# Get rid of noises (ex. big white spots that are not hair)
+for i in range(0, nlabels - 1):
+    if areas[i] >= 250:   # Keep
         result[labels == i + 1] = 255
-        
 
-filter_size = (10,10) 
+# Edge detected (contour) image using Canny edge detection
+edgeimg = cv2.Canny(result, 10, 150)
+cv2.imshow('edgeimg', edgeimg)
+
+filter_size = (18, 18)
 
 white_pixels = np.where(result == 255)
 
 x_coords = white_pixels[1]
 y_coords = white_pixels[0]
 
-#another version can be boxes goes to middle of the detection
-x1 = np.maximum((x_coords - filter_size[0]),0)
-y1 = np.maximum((y_coords - filter_size[1] ),0)
-x2 =(x_coords + filter_size[0] )
-y2 = (y_coords + filter_size[1] )
+x1 = x_coords - filter_size[0] // 2
+y1 = y_coords - filter_size[1] // 2
+x2 = x_coords + filter_size[0] // 2
+y2 = y_coords + filter_size[1] // 2
+
+# Getting center point of boxes
+center_x = (x1 + x2) // 2
+center_y = (y1 + y2) // 2
+
 
 white_regions = np.column_stack((x1, y1, x2, y2))  # (N, 4)
-
 white_regions = nms(white_regions, thresh=0.01)
 
-thickness_image = result.copy()
+skeleton_image = img.copy()
 
-sum_values = []
-# Draw bounding boxes on the thickness image
+center_points = []
+# Drawing bounding boxes and center points
 for coor in white_regions:
     x1, y1, x2, y2 = coor
-    # print(coor)
-    thickness_image = cv.rectangle(thickness_image, (x1, y1), (x2, y2), (255, 0, 0), 1)
-    
-    # Compute sum of white pixels within each bounding box
-    region_pixels = result[y1:y2, x1:x2]
-    sum_value = np.sum(region_pixels)
-    sum_values.append(sum_value)
-    
+    center_x = (x1 + x2) // 2
+    center_y = (y1 + y2) // 2
 
-    #the width of the bounding box = thickness???
-    # cv.putText(result, str(thickness), (region[0], region[1] - 5),
-    #             cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv.LINE_AA)
-    
-# print("thickness for white region1: ", thickness)
-# result = cv.rectangle(img, (292,0), (293,0), (255, 0, 0), 1)
-cv.imshow("Result", thickness_image)
+    skeleton_image = cv2.rectangle(skeleton_image, (x1, y1), (x2, y2), (255, 255, 255), 1)
+    skeleton_image = cv2.circle(skeleton_image, (center_x, center_y ), 1, (0, 255, 0), 1)
+    center_points.append((center_x, center_y))
 
-# cv.imshow('testrec', result)
-cv.waitKey(0)
-cv.destroyAllWindows()
+# Connect center points if they are adjacent horizontally or vertically
+for i in range(len(center_points) - 1):
+    if np.abs(x1 - x2) <= filter_size[0] or y1 == y2:  # Horizontally adjacent
+        skeleton_image = cv2.line(skeleton_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
+
+    if x1 == x2 or np.abs(y1 - y2) <= filter_size[1]:  # Vertically adjacent
+        skeleton_image = cv2.line(skeleton_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
 
 
-
-
-    
-    
-
+print(np.size(center_points))
+cv2.imshow('skeleton_image', skeleton_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
