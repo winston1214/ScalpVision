@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+from math import atan2, cos, sin, sqrt, pi
 
 def nms(boxes, thresh):
     if len(boxes) == 0:
@@ -36,7 +36,7 @@ def nms(boxes, thresh):
     return boxes[pick]
 
 # Pre-process
-img_path = "results/0013_A2LEBJJDE00060O_1606550825417_3_TH.png"
+img_path = "/home/jerry0110/scalp_diagnosis/results2/1407_A2LEBJJDE001258_1606104267519_4_LH.png"
 img = cv2.imread(img_path)
 imgray = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 
@@ -54,7 +54,7 @@ for i in range(0, nlabels - 1):
 
 # Edge detected (contour) image using Canny edge detection
 edgeimg = cv2.Canny(result, 10, 150)
-cv2.imshow('edgeimg', edgeimg)
+cv2.imshow('edgeimg.png', edgeimg)
 
 
 #skeleton image using morphology
@@ -93,10 +93,10 @@ for i in range(0, nlabels - 1):
 
 
 # Displaying the final skeleton
-cv2.imshow("Skeleton",skel)
+cv2.imshow("Skeleton.png",skel)
 
 combined_img = cv2.addWeighted(skel, 1, edgeimg, 1, 0)
-cv2.imshow('skeleton+contour', combined_img)
+cv2.imshow('skeleton+contour.png', combined_img)
 
 
 filter_size = (20, 20)
@@ -136,6 +136,19 @@ def get_direction(bbox_pixels):
     else:
         return (0, 0)  # No direction
     
+# Drawing bounding boxes and center points
+def get_direction2(bbox_pixels):
+    # Get the coordinates of non-zero (white) pixels within the bounding box
+    nonzero_indices = np.column_stack(np.nonzero(bbox_pixels))
+    nonzero_indices = np.float32(nonzero_indices)
+    # Perform PCA analysis
+    if len(nonzero_indices) >= 2:
+        mean, eigenvectors = cv2.PCACompute(nonzero_indices, mean=None)
+        cntr = (int(mean[0, 0]), int(mean[0, 1]))
+        return eigenvectors[0], cntr
+    else:
+        return (0,0), (0,0)
+    
 for coor in white_regions:
     x1, y1, x2, y2 = coor
     center_x = (x1 + x2) // 2
@@ -146,9 +159,10 @@ for coor in white_regions:
     skeleton_image = cv2.circle(img, (center_x, center_y), 1, (255, 0, 0), 1)
 
     # Calculate the direction using PCA for the white pixels within the bounding box
-    direction = get_direction(bbox_pixels)
+    direction, mean = get_direction2(bbox_pixels)
     directions.append(direction)
-print(np.size(directions))     
+    center_points.append((mean[0]+x1,mean[1]+y1))
+print(np.size(directions))
 
 thicknesses = []
 perpendicular_slope = []
@@ -156,23 +170,26 @@ perpendicular_slope = []
 for direction, ctpt in zip(directions, center_points):
     cx, cy = ctpt
     # Calculate the slope of the direction vector
+    # print(direction)
     if direction[1] != 0:
-        perpendicular_slope.append(-1/(direction[0] / direction[1]))
+        perpendicular_slope.append(-1/(direction[0] / direction[1]))        
     else:
         perpendicular_slope.append(0)  # Perpendicular slope is 0 for vertical direction
         
-print(np.size(perpendicular_slope))   
+print(np.size(perpendicular_slope))
+
 # Calculate intersection points and thickness for each 'center point'
 for center_point, perp_slope in zip(center_points, perpendicular_slope):
     cx, cy = center_point
     line_length = 10
-    x1 = int(cx - line_length / 2)
-    y1 = int(cy - (line_length / 2) * perp_slope)
-    x2 = int(cx + line_length / 2)
-    y2 = int(cy + (line_length / 2) * perp_slope)
+    x1 = float(cx -  line_length/((1+perp_slope**2)**0.5))
+    y1 = float(cy-perp_slope*cx + x1 * perp_slope)
+    x2 = float(cx +  line_length/((1+perp_slope**2)**0.5))
+    y2 = float(cy-perp_slope*cx + x2 * perp_slope)
 
+    
     # Draw the short line on the image
-    cv2.line(skeleton_image, (x1,y1), (x2,y2), (0, 255, 0), 1)
+    cv2.line(skeleton_image, (int(x1),int(y1)), (int(x2),int(y2)), (0, 255, 0), 1)
     
     intersection_points = []
     for x in range(edgeimg.shape[1]):
@@ -185,11 +202,11 @@ for center_point, perp_slope in zip(center_points, perpendicular_slope):
             if edgeimg[perp_y, x] == 255:
                 intersection_points.append((x, perp_y))
         
-# avg_thickness = np.mean(thicknesses)
+avg_thickness = np.mean(thicknesses)
 
-# print('avg_thickenss', avg_thickness)
+print('avg_thickenss', avg_thickness)
 # print(directions)
 
-cv2.imshow('bbox,centerpt_image', skeleton_image)
+cv2.imshow('bbox+centerpt_image.png', skeleton_image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
