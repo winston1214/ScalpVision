@@ -129,6 +129,7 @@ white_regions = np.column_stack((x1, y1, x2, y2))  # (N, 4)
 white_regions = nms(white_regions, thresh=0.1)
 
 skeleton_image = cv2.cvtColor(skel.copy(), cv2.COLOR_BGR2RGB)
+filtered_image = cv2.cvtColor(re_copy.copy(), cv2.COLOR_BGR2RGB)
 
 center_points = []
 
@@ -165,14 +166,20 @@ def find_intersection_points2(center, slope, img,threshold):
             p1=(px,py)
         else:
             break
-
+ 
     for d in range(1,step*searching_len):
         px, py = find_pts_on_line(center,slope,-d/step)
         if (0<int(px)<h) and (0<int(py)<w) and img[int(py)][int(px)]>threshold:
             p2=(px,py)
         else:
             break
-    return [p1,p2],np.linalg.norm(np.asarray(p1)-np.asarray(p2))
+    dst=0
+    if p1==(-1,-1) or p2==(-1,-1):
+        dst=0
+    else:
+        dst=np.linalg.norm(np.asarray(p1)-np.asarray(p2))
+ 
+    return [p1,p2],dst
 
 for coor in white_regions:
     x1, y1, x2, y2 = coor
@@ -186,6 +193,9 @@ for coor in white_regions:
     center_points.append((mean[0]+x1,mean[1]+y1))
     skeleton_image = cv2.rectangle(skeleton_image, (x1, y1), (x2, y2), (255, 255, 255), 1)
     skeleton_image = cv2.circle(img, (int(mean[0]+x1),int(mean[1]+y1)), 1, (255, 0, 0), 1)
+    
+    filtered_image = cv2.rectangle(filtered_image, (x1, y1), (x2, y2), (255, 255, 200), 1)
+    filtered_image = cv2.circle(filtered_image, (int(mean[0]+x1),int(mean[1]+y1)), 1, (255, 0, 0), -1)
 
 thicknesses = []
 perpendicular_slope = []
@@ -209,14 +219,16 @@ for center_point, perp_slope in zip(center_points, perpendicular_slope):
     if dst!=0:
         thicknesses.append(dst)
     cv2.line(skeleton_image, (int(x1),int(y1)), (int(x2),int(y2)), (0, 255, 0), 1)
+    cv2.line(filtered_image, (int(x1),int(y1)), (int(x2),int(y2)), (0, 255, 0), 1)
     
 for pts in intersection_points:
     x, y = pts
     cv2.circle(skeleton_image, (int(x), int(y)), 1, (255, 128, 0), -1)
+    cv2.circle(filtered_image, (int(x), int(y)), 1, (255, 128, 0), -1)
 
 avg_thickness = np.mean(thicknesses)
 
 print('avg_thickenss', avg_thickness) 
 cv2.imwrite('re.png', re_copy)
 cv2.imwrite('bbox+centerpt_image.png', skeleton_image)
-cv2.destroyAllWindows()
+cv2.imwrite('bbox+centerpt_on_filtered_image.png', filtered_image)
