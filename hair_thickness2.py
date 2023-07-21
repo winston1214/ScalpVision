@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
-from math import atan2, cos, sin, sqrt, pi
+
+#thickness methods
+# 1.median,mean / 2.IQR / 3.top,bottom 10%
 
 def nms(boxes, thresh):
     if len(boxes) == 0:
@@ -43,11 +45,12 @@ def find_pts_on_line(og, slope, d):
     return (x1,y1)
 
 # Pre-process
-img_path = "/home/jerry0110/scalp_diagnosis/results2/1407_A2LEBJJDE001258_1606104267519_4_LH.png"
+img_path = "results/0013_A2LEBJJDE00060O_1606550825417_3_TH.png"
 img = cv2.imread(img_path)
 imgray = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 
-# Apply threshold
+
+# # # Apply threshold
 ret, binary_map = cv2.threshold(imgray, 127, 255, 0)
 
 # Get rid of noises (ex. big white spots that are not hair)
@@ -60,11 +63,11 @@ for i in range(0, nlabels - 1):
         result[labels == i + 1] = 255
 re_copy=result.copy()
 
+
 # Edge detected (contour) image using Canny edge detection
 edgeimg = cv2.Canny(result, 10, 150)
-cv2.imwrite('edgeimg.png', edgeimg)
+cv2.imwrite('output/edgeimg.png', edgeimg)
 
-contours, _ = cv2.findContours(edgeimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 #skeleton image using morphology
 # Step 1: Create an empty skeleton
@@ -74,7 +77,7 @@ skel = np.zeros(result.shape, np.uint8)
 # Get a Cross Shaped Kernel
 element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3))
 
-# Repeat steps 2-4
+#Repeat steps 2-4
 while True:
     # Step 2: Open the image
     open = cv2.morphologyEx(result, cv2.MORPH_OPEN, element)
@@ -100,16 +103,7 @@ for i in range(0, nlabels - 1):
         skel[labels == i + 1] = 255
 
 
-
-# Displaying the final skeleton
-cv2.imwrite("Skeleton.png",skel)
-
-combined_img = cv2.addWeighted(skel, 1, edgeimg, 1, 0)
-cv2.imwrite('skeleton+contour.png', combined_img)
-
-
-filter_size = (20, 20)
-
+filter_size = (20, 20) #reducing filter size 20->18 detects more intersection pts
 white_pixels = np.where(skel == 255)
 
 x_coords = white_pixels[1]
@@ -128,14 +122,12 @@ center_y = (y1 + y2) // 2
 white_regions = np.column_stack((x1, y1, x2, y2))  # (N, 4)
 white_regions = nms(white_regions, thresh=0.1)
 
-skeleton_image = cv2.cvtColor(skel.copy(), cv2.COLOR_BGR2RGB)
 filtered_image = cv2.cvtColor(re_copy.copy(), cv2.COLOR_BGR2RGB)
 
 center_points = []
 
 directions =[]
 
-    
 # Drawing bounding boxes and center points
 def get_direction2(bbox_pixels):
     # Get the coordinates of non-zero (white) pixels within the bounding box
@@ -191,8 +183,6 @@ for coor in white_regions:
     direction, mean = get_direction2(bbox_pixels)
     directions.append(direction)
     center_points.append((mean[0]+x1,mean[1]+y1))
-    skeleton_image = cv2.rectangle(skeleton_image, (x1, y1), (x2, y2), (255, 255, 255), 1)
-    skeleton_image = cv2.circle(img, (int(mean[0]+x1),int(mean[1]+y1)), 1, (255, 0, 0), 1)
     
     filtered_image = cv2.rectangle(filtered_image, (x1, y1), (x2, y2), (255, 255, 200), 1)
     filtered_image = cv2.circle(filtered_image, (int(mean[0]+x1),int(mean[1]+y1)), 1, (255, 0, 0), -1)
@@ -218,17 +208,51 @@ for center_point, perp_slope in zip(center_points, perpendicular_slope):
     intersection_points+=intersection
     if dst!=0:
         thicknesses.append(dst)
-    cv2.line(skeleton_image, (int(x1),int(y1)), (int(x2),int(y2)), (0, 255, 0), 1)
     cv2.line(filtered_image, (int(x1),int(y1)), (int(x2),int(y2)), (0, 255, 0), 1)
     
 for pts in intersection_points:
     x, y = pts
-    cv2.circle(skeleton_image, (int(x), int(y)), 1, (255, 128, 0), -1)
-    cv2.circle(filtered_image, (int(x), int(y)), 1, (255, 128, 0), -1)
+    cv2.circle(filtered_image, (int(x), int(y)), 2, (255, 128, 0), -1)
 
-avg_thickness = np.mean(thicknesses)
+thicknesses_sort = np.sort(thicknesses)
 
-print('avg_thickenss', avg_thickness) 
-cv2.imwrite('re.png', re_copy)
-cv2.imwrite('bbox+centerpt_image.png', skeleton_image)
-cv2.imwrite('bbox+centerpt_on_filtered_image.png', filtered_image)
+#method1: mean
+avg_thickness = np.mean(thicknesses_sort)
+print('avg_thickenss_mean: ', avg_thickness)
+
+#method2: median
+avg_thickness2 = np.median(thicknesses_sort)
+print('avg_thickenss_median: ', avg_thickness2)
+
+#method3: remove top10%,bottom10%, mean
+num_elements_to_remove = int(len(thicknesses_sort) * 0.1)
+trimmed10_array_mean = thicknesses_sort[num_elements_to_remove::num_elements_to_remove]
+print('avg_thickness_10%_mean: ',np.mean(trimmed10_array_mean))
+
+#method4: remove top10%,bottom10%, median
+num_elements_to_remove = int(len(thicknesses_sort) * 0.1)
+trimmed10_array_median = thicknesses_sort[num_elements_to_remove::num_elements_to_remove]
+print('avg_thickness_10%_median: ',np.median(trimmed10_array_median))
+
+#method5: IQR outlier median
+q1 = np.quantile(thicknesses_sort, 0.25)
+q3 = np.quantile(thicknesses_sort, 0.75)
+iqr = q3-q1
+lower_bound = q1 - 1.5 * iqr
+upper_bound = q3 + 1.5 * iqr
+outlier_array_median = thicknesses_sort[(thicknesses_sort >= lower_bound) & (thicknesses_sort <= upper_bound)]
+print('w/o outlier_median: ',np.median(outlier_array_median))
+
+#method5: IQR outlier mean
+q1 = np.quantile(thicknesses_sort, 0.25)
+q3 = np.quantile(thicknesses_sort, 0.75)
+iqr = q3-q1
+lower_bound = q1 - 1.5 * iqr
+upper_bound = q3 + 1.5 * iqr
+outlier_array_mean = thicknesses_sort[(thicknesses_sort >= lower_bound) & (thicknesses_sort <= upper_bound)]
+print('w/o outlier_mean: ',np.mean(outlier_array_mean))
+
+    
+print('number of intersection points: ',np.size(intersection_points))
+cv2.imwrite('output/result.png', re_copy)
+cv2.imwrite('output/bbox+centerpt_on_filtered_image.png', filtered_image)
