@@ -61,6 +61,13 @@ WHITE_LIST = [
     [200, 200, 200],
 ]
 
+YELLOW_LIST = [
+  [217, 190, 121],
+  [184, 152, 109],
+  [180, 161, 124],
+  [177, 163, 88]
+]
+
 
 def draw_hair(img):
     mask = np.zeros_like(img).copy()
