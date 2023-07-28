@@ -1,15 +1,7 @@
 import cv2
 import numpy as np
-from sklearn.cluster import KMeans
 
 
-#TODO
- #i have bbox list and intersection list. i want to map intersection points with each bbox when points are within the box. 
- # Then I want to calculate the L2 distance of two farthest points in a bounding box, save the distance in the array.
- # The average of those distances of all selected points=thickness    
- 
- #find intersection points that align with perp_line
- 
 def nms(boxes, thresh):
     if len(boxes) == 0:
         return []
@@ -43,12 +35,20 @@ def nms(boxes, thresh):
 
     return boxes[pick]
 
+#function that find point on line
+def find_pts_on_line(og, slope, d):
+    cx, cy = og
+    x1 = float(cx -  d/((1+slope**2)**0.5))
+    y1 = float(cy-slope*cx + x1 * slope)
+    return (x1,y1)
+
 # Pre-process
-img_path = "results/0013_A2LEBJJDE00060O_1606550825417_3_TH.png"
+img_path = "results2/8000_A2LEBJJDE000956_1605342448709_5_RH.png"
 img = cv2.imread(img_path)
 imgray = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 
-# Apply threshold
+
+# # # Apply threshold
 ret, binary_map = cv2.threshold(imgray, 127, 255, 0)
 
 # Get rid of noises (ex. big white spots that are not hair)
@@ -57,12 +57,15 @@ nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_map,
 areas = stats[1:, cv2.CC_STAT_AREA]
 result = np.zeros((labels.shape), np.uint8)
 for i in range(0, nlabels - 1):
-    if areas[i] >= 400:   # Keep
+    if areas[i] >= 250:   # Keep
         result[labels == i + 1] = 255
+re_copy=result.copy()
+
 
 # Edge detected (contour) image using Canny edge detection
-edgeimg = cv2.Canny(result, 100, 200)
-cv2.imshow('edgeimg.png', edgeimg)
+edgeimg = cv2.Canny(result, 10, 150)
+cv2.imwrite('output/edgeimg.png', edgeimg)
+
 
 #skeleton image using morphology
 # Step 1: Create an empty skeleton
@@ -72,7 +75,7 @@ skel = np.zeros(result.shape, np.uint8)
 # Get a Cross Shaped Kernel
 element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3))
 
-# Repeat steps 2-4
+#Repeat steps 2-4
 while True:
     # Step 2: Open the image
     open = cv2.morphologyEx(result, cv2.MORPH_OPEN, element)
@@ -93,18 +96,14 @@ nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(skel, None,
 areas = stats[1:, cv2.CC_STAT_AREA]
 skel = np.zeros((labels.shape), np.uint8) 
 # Get rid of noises of skeleton(optional)
-for i in range(0, nlabels - 1): 
-    if areas[i] >= 100:   # Keep
+for i in range(0, nlabels - 1):
+    if areas[i] >= 5:   # Keep
         skel[labels == i + 1] = 255
 
 
+cv2.imwrite('output/skeleton.png', skel)
 
-# Displaying the final skeleton
-cv2.imshow("Skeleton.png",skel)
-
-
-filter_size = (16,16)
-
+filter_size = (20, 20) #reducing filter size 20->18 detects more intersection pts
 white_pixels = np.where(skel == 255)
 
 x_coords = white_pixels[1]
@@ -119,17 +118,18 @@ y2 = y_coords + filter_size[1] // 2
 center_x = (x1 + x2) // 2
 center_y = (y1 + y2) // 2
 
-
 white_regions = np.column_stack((x1, y1, x2, y2))  # (N, 4)
 white_regions = nms(white_regions, thresh=0.1)
 
-skeleton_image = cv2.cvtColor(skel.copy(), cv2.COLOR_BGR2RGB)
+
+
+filtered_image = cv2.cvtColor(re_copy.copy(), cv2.COLOR_BGR2RGB)
 
 center_points = []
+
 directions =[]
-bboxes = []
-    
-# Drawing bounding boxes and center points
+
+
 def get_direction2(bbox_pixels):
     # Get the coordinates of non-zero (white) pixels within the bounding box
     nonzero_indices = np.column_stack(np.nonzero(bbox_pixels))
@@ -137,60 +137,72 @@ def get_direction2(bbox_pixels):
     # Perform PCA analysis
     if len(nonzero_indices) >= 2:
         mean, eigenvectors = cv2.PCACompute(nonzero_indices, mean=None)
-        cntr = (int(mean[0, 0]), int(mean[0, 1]))
+        print(len(eigenvectors))
+        print(np.dot(eigenvectors[0],eigenvectors[1]))
+        cntr = ((mean[0, 1]), (mean[0, 0]))
         return eigenvectors[0], cntr
     else:
         return (0,0), (0,0)
     
-def calculate_intersection(start_point, end_point, edge, bbox):
-    x1, y1 = start_point
-    x2, y2 = end_point
-    x, y = edge
-
-    # Check if the edge point is on the line segment and within the bounding box
-    if bbox[0][0] <= x <= bbox[1][0] and bbox[0][1] <= y <= bbox[1][1] and min(x1, x2) <= x <= max(x1, x2) and min(y1, y2) <= y <= max(y1, y2):
-        return True
-    return False
     
 intersection_points = []
-def find_intersection_points(start_point, end_point, bounding_boxes):
-    for bbox in bounding_boxes:
-        bbox_x1, bbox_y1 = bbox[0]
-        bbox_x2, bbox_y2 = bbox[1]
+# find intersection btw perpendicular line and contour
+def find_intersection_points2(center, slope, img, threshold):
+    p2 = p1 = (-1, -1)
+    w, h = img.shape
+    
+    # you can change step and searching_len for faster search
+    # too high step may result in skipping pixel
+    # too low searching len may limit searching space
+    step = 100
+    searching_len = 50
+    
+    for d in range(1, step * searching_len):
+        # positive slope
+        px, py = find_pts_on_line(center, slope, d / step)
+        if (0 < int(px) < h) and (0 < int(py) < w) and not np.isnan(img[int(py)][int(px)]) and img[int(py)][int(px)] > threshold:
+            p1 = (px, py)
+        else:
+            break
+ 
+    for d in range(1, step * searching_len):
+        # negative slope
+        px, py = find_pts_on_line(center, slope, -d / step)
+        if (0 < int(px) < h) and (0 < int(py) < w) and not np.isnan(img[int(py)][int(px)]) and img[int(py)][int(px)] > threshold:
+            p2 = (px, py)
+        else:
+            break
 
-        for bbox in bounding_boxes:
-            bbox_x1, bbox_y1 = np.clip(bbox[0], 0, edgeimg.shape[1] - 1)
-            bbox_x2, bbox_y2 = np.clip(bbox[1], 0, edgeimg.shape[0] - 1)
+    dst = 0
+    if p1 == (-1, -1) or p2 == (-1, -1):
+        dst = 0
+    else:
+        dst = np.linalg.norm(np.asarray(p1) - np.asarray(p2))
+ 
+    return [p1, p2], dst
 
-            for y in range(bbox_y1, bbox_y2 + 1):
-                for x in range(bbox_x1, bbox_x2 + 1):
-                    if 0 <= y < edgeimg.shape[0] and 0 <= x < edgeimg.shape[1] and edgeimg[y, x] == 255:
-                        if calculate_intersection(start_point, end_point, (x, y), bbox):
-                            intersection_points.append((x, y)) #(x,y) location of pixels that are white.
-                
-                    
 for coor in white_regions:
     x1, y1, x2, y2 = coor
     center_x = (x1 + x2) // 2
     center_y = (y1 + y2) // 2
     bbox_pixels = skel[y1:y2, x1:x2]
 
-    skeleton_image = cv2.rectangle(skeleton_image, (x1, y1), (x2, y2), (255, 255, 255), 1)
-    skeleton_image = cv2.circle(img, (center_x, center_y), 1, (255, 0, 0), 1)
-
     # Calculate the direction using PCA for the white pixels within the bounding box
     direction, mean = get_direction2(bbox_pixels)
     directions.append(direction)
     center_points.append((mean[0]+x1,mean[1]+y1))
-    bboxes.append(((x1,y1),(x2,y2)))
+    
+    # filtered_image = cv2.rectangle(filtered_image, (x1, y1), (x2, y2), (255, 255, 200), 1)
+    # filtered_image = cv2.circle(filtered_image, (int(mean[0]+x1),int(mean[1]+y1)), 1, (255, 0, 0), -1)
 
 thicknesses = []
+
+
 perpendicular_slope = []
 
 for direction, ctpt in zip(directions, center_points):
     cx, cy = ctpt
     # Calculate the slope of the direction vector
-    # print(direction)
     if direction[1] != 0:
         perpendicular_slope.append(-1/(direction[0] / direction[1]))        
     else:
@@ -198,29 +210,35 @@ for direction, ctpt in zip(directions, center_points):
 
 
 for center_point, perp_slope in zip(center_points, perpendicular_slope):
-    cx, cy = center_point
-    line_length = 10
-    x1 = float(cx - line_length/((1+perp_slope**2)**0.5))
-    y1 = float(cy-perp_slope*cx + x1 * perp_slope)
-    x2 = float(cx +  line_length/((1+perp_slope**2)**0.5))
-    y2 = float(cy-perp_slope*cx + x2 * perp_slope)
+    x1, y1= find_pts_on_line(center_point,perp_slope,10)
+    x2, y2= find_pts_on_line(center_point,perp_slope,-10)
     
-    # Draw the short line on the image
-    # cv2.line(skeleton_image, (int(x1),int(y1)), (int(x2),int(y2)), (0, 255, 0), 1)
-    find_intersection_points((int(x1),int(y1)),(int(x2),int(y2)),bboxes)
+    
+    intersection, dst=find_intersection_points2(center_point,perp_slope, re_copy,200)
+    intersection_points+=intersection
+    if dst!=0:
+        thicknesses.append(dst)
+        
+     # Draw the short line on the image
+    cv2.line(filtered_image, (int(x1),int(y1)), (int(x2),int(y2)), (0, 255, 0), 1)
+    
+for pts in intersection_points:
+    x, y = pts
+    cv2.circle(filtered_image, (int(x), int(y)), 3, (0, 0, 255), -1)
+    
     
 
-# for i in intersection_points:
-#     (x,y) = i
-#     cv2.circle(skeleton_image,(x,y),1,(255,255,0),1)
+thicknesses_sort = np.sort(thicknesses)
 
-
-# avg_thickness = np.mean(thicknesses)
-# print(intersection_points)
-# print('avg_thickenss', avg_thickness) 
-
-print(np.size(intersection_points))
-
-# cv2.imshow('bbox+centerpt_image.png', skeleton_image)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#method5: IQR outlier median
+q1 = np.quantile(thicknesses_sort, 0.25)
+q3 = np.quantile(thicknesses_sort, 0.75)
+iqr = q3-q1
+lower_bound = q1 - 1.5 * iqr
+upper_bound = q3 + 1.5 * iqr
+outlier_array_median = thicknesses_sort[(thicknesses_sort >= lower_bound) & (thicknesses_sort <= upper_bound)]
+print('w/o outlier_median: ',np.median(outlier_array_median))
+    
+print('number of intersection points: ',np.size(intersection_points))
+cv2.imwrite('output/result.png', re_copy)
+cv2.imwrite('output/bbox+centerpt_on_filtered_image.png', filtered_image)
