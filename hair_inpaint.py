@@ -1,3 +1,26 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+def group_consecutive_numbers(nums):
+    # 결과를 저장할 리스트
+    result = []
+    # 현재 그룹을 저장할 리스트
+    current_group = []
+
+    for i, num in enumerate(nums):
+        # 현재 숫자가 리스트의 첫 번째 요소이거나, 이전 숫자와 1만큼 차이가 날 경우
+        if i == 0 or num == nums[i - 1] + 1:
+            current_group.append(num)
+        else:
+            # 그룹이 끝났을 경우 결과 리스트에 추가하고, 새로운 그룹 시작
+            result.append(current_group)
+            current_group = [num]
+
+    # 마지막 그룹을 결과 리스트에 추가
+    result.append(current_group)
+    return result
+
 img = cv2.imread('../scalp_aihub/train/images/3365_A2LEBJJDE00106D_1605944166106_5_RH.jpg')
 mask = cv2.imread('../scalp_aihub/seg_train/3365_A2LEBJJDE00106D_1605944166106_5_RH.png')
 
