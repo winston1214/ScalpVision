@@ -334,12 +334,9 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--img_file', type=str, default= "/home/jerry0110/talmo/train_img/1407_A2LEBJJDE001258_1606104267519_4_LH.jpg")
-    parser.add_argument('--mask_file', type=str, default= "/home/jerry0110/scalp_diagnosis/results2/1407_A2LEBJJDE001258_1606104267519_4_LH.png")
-    parser.add_argument('--save_file', type=str, default= "/home/jerry0110/scalp_diagnosis/hair_masking/blur.png")
-    parser.add_argument('--img_path', type=str,default= "/scratch/winston1214/talmo/train_img")
-    parser.add_argument('--mask_path', type=str, default= '/home/jerry0110/scalp_diagnosis/results')
-    parser.add_argument('--save_path', type=str,default='/home/jerry0110/scalp_diagnosis/hair_masking/re')
+    parser.add_argument('--img_path', type=str)
+    parser.add_argument('--mask_path', type=str)
+    parser.add_argument('--save_path', type=str)
     parser.add_argument('--thr', type=int, default = 400)
     parser.add_argument('--kernel_size', type=int, default = 17)
     parser.add_argument('--sigma', type=int, default = 1)
