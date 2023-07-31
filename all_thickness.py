@@ -243,7 +243,7 @@ def main(img_path, save_path, save_img=False):
         cv2.circle(filtered_image, (int(x), int(y)), 3, (0, 0, 255), -1)
 
 
-    img_name = img.path.split('/')[-1]
+    img_name = img_path.split('/')[-1]
     thicknesses_sort = np.sort(thicknesses)
     np.save(os.path.join(save_path, img_name),thicknesses_sort)
     #method5: IQR outlier median
