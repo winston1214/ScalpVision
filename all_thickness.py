@@ -104,7 +104,7 @@ def get_direction2(bbox_pixels):
     else:
         return (0,0), (0,0)
 
-def main(img_path, save_img=False):
+def main(img_path, save_path, save_img=False):
     # Pre-process
     # img_path = "results2/8000_A2LEBJJDE000956_1605342448709_5_RH.png"
     img = cv2.imread(img_path)
@@ -243,48 +243,34 @@ def main(img_path, save_img=False):
         cv2.circle(filtered_image, (int(x), int(y)), 3, (0, 0, 255), -1)
 
 
-
+    img_name = img.path.split('/')[-1]
     thicknesses_sort = np.sort(thicknesses)
-
+    np.save(os.path.join(save_path, img_name),thicknesses_sort)
     #method5: IQR outlier median
-    q1 = np.quantile(thicknesses_sort, 0.25)
-    q3 = np.quantile(thicknesses_sort, 0.75)
-    iqr = q3-q1
-    lower_bound = q1 - 1.5 * iqr
-    upper_bound = q3 + 1.5 * iqr
-    outlier_array_median = thicknesses_sort[(thicknesses_sort >= lower_bound) & (thicknesses_sort <= upper_bound)]
-    # print('w/o outlier_median: ',np.median(outlier_array_median))
-    if save_img:
-        cv2.imwrite('output/result.png', re_copy)
-        cv2.imwrite('output/bbox+centerpt_on_filtered_image.png', filtered_image)
-    return np.median(outlier_array_median)
+#     try:
+#         q1 = np.quantile(thicknesses_sort, 0.25)
+#         q3 = np.quantile(thicknesses_sort, 0.75)
+#         iqr = q3-q1
+#         lower_bound = q1 - 1.5 * iqr
+#         upper_bound = q3 + 1.5 * iqr
+#         outlier_array_median = thicknesses_sort[(thicknesses_sort >= lower_bound) & (thicknesses_sort <= upper_bound)]
+#         # print('w/o outlier_median: ',np.median(outlier_array_median))
+#         if save_img:
+#             cv2.imwrite('output/result.png', re_copy)
+#             cv2.imwrite('output/bbox+centerpt_on_filtered_image.png', filtered_image)
+#         return np.median(outlier_array_median)
+#     except:
+#         pass
+    
         
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--img_folder',type=str)
-    parser.add_argument('--csv_path',type=str)
+    parser.add_argument('--save_path',type=str)
     args = parser.parse_args()
     
-    csv_file = pd.DataFrame(columns = ['img_name','thickness'])
-    thick_ls = []
-    img_ls = []
-    for im in tqdm(sorted(glob.glob(os.path.join(args.img_folder, '*.png')))):
-        try:
-            thickness = main(im)
-        except:
-            csv_file['img_name'] = img_ls
-            csv_file['thickness'] = thick_ls
-
-            csv_file.to_csv(args.csv_path, index=False)
-            print('ERROR')
-            print(im)
-            raise IOError
-        thick_ls.append(thickness)
-        img_name = im.split('/')[-1]
-        img_ls.append(img_name)
+    os.makedirs(args.save_path, exist_ok=True)    
     
-    csv_file['img_name'] = img_ls
-    csv_file['thickness'] = thick_ls
-    
-    csv_file.to_csv(args.csv_path, index=False)
+    for im in tqdm(sorted(glob.glob(os.path.join(args.img_folder, '*.png')))[:30000]):
+        main(im, args.save_path)
