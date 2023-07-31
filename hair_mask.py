@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 from math import atan2, cos, sin, sqrt, pi
-import argparse
+import argparse 
 import multiprocessing
 import time
+import asyncio
+import tqdm,glob,os
 
 # create gaussian kernel with k_size(filter size) and sigma
 def gaussian_kernel(k_size, sigma):
@@ -88,6 +90,88 @@ def per_channel_cal(pad_img, pad_mask, ch, rows, cols, k_size,kerenl, ret_dict,e
                 error_set.append((i,j))
     ret_dict[ch]=out
 
+# def shared_to_numpy(shared_arr, dtype, shape):
+#     return np.frombuffer(shared_arr, dtype=dtype).reshape(shape)
+
+
+# def create_shared_array(dtype, shape):
+#     dtype = np.dtype(dtype)
+#     cdtype = np.ctypeslib.as_ctypes_type(dtype)
+#     shared_arr = multiprocessing.RawArray(cdtype, sum(shape))
+#     arr = shared_to_numpy(shared_arr, dtype, shape)
+#     return shared_arr, arr
+
+
+
+def dynamic_gaussian_filtering_multi(img, mask, k_size=3,sigma=1):
+    rows, cols, channels = img.shape
+    m_rows, m_cols = mask.shape
+    assert rows==m_rows and cols == m_cols
+    
+    ksz_lst=[i for i in range(k_size,k_size+100,10)]
+    kernel_list=[gaussian_kernel(i, sigma) for i in ksz_lst]
+    pad_img_lst=[padding(img,i) for i in ksz_lst]
+    pad_mask_lst=[padding(mask,i,1) for i in ksz_lst]
+   
+    filtered_img = np.zeros((rows, cols, channels), dtype=np.float32)
+    param=(ksz_lst,pad_img_lst,pad_mask_lst,kernel_list)
+    
+    filtered_img[:,:,0]=np.where(mask==0,img[:,:,0],-1)
+    filtered_img[:,:,1]=np.where(mask==0,img[:,:,1],-1)
+    filtered_img[:,:,2]=np.where(mask==0,img[:,:,2],-1)
+    
+    error_set=set()
+    for i in range(rows):
+        for j in range(cols):
+            if -1 in filtered_img[i][j]:
+                error_set.add((i,j))
+    asyncio.run(running2(error_set,param,filtered_img))
+    
+    return filtered_img.astype(np.uint8)
+
+async def running2(error_set,param,filtered_img):
+    task_lst=[]
+    for pts in error_set:
+        task_lst.append(asyncio.create_task(each_pix_cal2(pts,param)))
+    
+    for task in task_lst:
+        await task
+    
+    ret=[]
+    for task in task_lst:
+        ret.append( task.result())
+
+    for ele in ret:
+        filtered_img[ele[3]][ele[4]]=ele[:3]
+    
+    
+async def each_pix_cal2(pts,rest_of_param):
+    ksz_lst,pad_img_lst,pad_mask_lst,kernel_list= rest_of_param
+    channels=3
+    i,j=pts
+    for idx,ksz in enumerate(ksz_lst):#,start=1
+        # if idx==0:
+        #     continue
+        pixval=[0,0,0,i,j]
+        for ch in range(0, channels):
+            sub_matrix=pad_img_lst[idx][i:i+ksz, j:j+ksz, ch]
+            sub_mask_matrix=pad_mask_lst[idx][i:i+ksz, j:j+ksz]
+            filtered=sub_matrix[sub_mask_matrix==0]
+            if len(filtered)==0:
+                avg=0
+            else:
+                avg=np.mean(filtered)
+            sub_matrix=np.where(sub_mask_matrix==0,sub_matrix,avg)
+            pixval[ch]=np.sum(kernel_list[idx] * sub_matrix)
+            
+        if 255>=pixval[0]>=1 and 255>=pixval[1]>=1 and 255>=pixval[2]>=1:
+            return pixval
+    
+    return [0,0,0,i,j]
+
+
+
+
 #dynamic gaussian 'conditional' filtering
 #basically increase filter size til caculated pixel value is non-zero
 def dynamic_gaussian_filtering(img, mask, k_size=3,sigma=1):
@@ -154,26 +238,69 @@ def dynamic_gaussian_filtering(img, mask, k_size=3,sigma=1):
             filtered_img[:,:,ch]=shared_out[ch]
     
     #for pix with nan, increase kernel size til pixel is non-zero
-    for _,pts in enumerate(error_set):
-        i,j=pts
-        for idx,ksz in enumerate(ksz_lst):#,start=1
-            if idx==0:
-                continue
-            for ch in range(0, channels):
-                sub_matrix=pad_img_lst[idx][i:i+ksz, j:j+ksz, ch]
-                sub_mask_matrix=pad_mask_lst[idx][i:i+ksz, j:j+ksz]
-                filtered=sub_matrix[sub_mask_matrix==0]
-                if len(filtered)==0:
-                    avg=0
-                else:
-                    avg=np.mean(filtered)
-                sub_matrix=np.where(sub_mask_matrix==0,sub_matrix,avg)
-                pixval=np.sum(kernel_list[idx] * sub_matrix)
-                filtered_img[i, j, ch] = pixval
+    # for _,pts in enumerate(error_set):
+    #     i,j=pts
+    #     for idx,ksz in enumerate(ksz_lst):#,start=1
+    #         if idx==0:
+    #             continue
+    #         for ch in range(0, channels):
+    #             sub_matrix=pad_img_lst[idx][i:i+ksz, j:j+ksz, ch]
+    #             sub_mask_matrix=pad_mask_lst[idx][i:i+ksz, j:j+ksz]
+    #             filtered=sub_matrix[sub_mask_matrix==0]
+    #             if len(filtered)==0:
+    #                 avg=0
+    #             else:
+    #                 avg=np.mean(filtered)
+    #             sub_matrix=np.where(sub_mask_matrix==0,sub_matrix,avg)
+    #             pixval=np.sum(kernel_list[idx] * sub_matrix)
+    #             filtered_img[i, j, ch] = pixval
                 
-            if 255>=filtered_img[i][j][0]>=1 and 255>=filtered_img[i][j][1]>=1 and 255>=filtered_img[i][j][2]>=1:
-                break
+    #         if 255>=filtered_img[i][j][0]>=1 and 255>=filtered_img[i][j][1]>=1 and 255>=filtered_img[i][j][2]>=1:
+    #             break
+
+    param=(ksz_lst,pad_img_lst,pad_mask_lst,kernel_list)
+    asyncio.run(running(error_set,param,filtered_img))
+    
     return filtered_img.astype(np.uint8)
+async def running(error_set,param,filtered_img):
+    task_lst=[]
+    for pts in error_set:
+        task_lst.append(asyncio.create_task(each_pix_cal(pts,param)))
+    
+    for task in task_lst:
+        await task
+    
+    ret=[]
+    for task in task_lst:
+        ret.append( task.result())
+
+    for ele in ret:
+        filtered_img[ele[3]][ele[4]]=ele[:3]
+    
+    
+async def each_pix_cal(pts,rest_of_param):
+    ksz_lst,pad_img_lst,pad_mask_lst,kernel_list = rest_of_param
+    channels=3
+    i,j=pts
+    for idx,ksz in enumerate(ksz_lst):#,start=1
+        # if idx==0:
+        #     continue
+        pixval=[0,0,0,i,j]
+        for ch in range(0, channels):
+            sub_matrix=pad_img_lst[idx][i:i+ksz, j:j+ksz, ch]
+            sub_mask_matrix=pad_mask_lst[idx][i:i+ksz, j:j+ksz]
+            filtered=sub_matrix[sub_mask_matrix==0]
+            if len(filtered)==0:
+                avg=0
+            else:
+                avg=np.mean(filtered)
+            sub_matrix=np.where(sub_mask_matrix==0,sub_matrix,avg)
+            pixval[ch]=np.sum(kernel_list[idx] * sub_matrix)
+            
+        if 255>=pixval[0]>=1 and 255>=pixval[1]>=1 and 255>=pixval[2]>=1:
+            return pixval
+    
+    return [0,0,0,i,j]
 
 def main(args):
     # Pre-process
@@ -214,14 +341,22 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--img_file', type=str )
-    parser.add_argument('--mask_file', type=str)
-    parser.add_argument('--save_file', type=str)
-    parser.add_argument('--bring_img_to_pwd', type=bool, default= True)
+    # parser.add_argument('--img_file', type=str, default= "/home/jerry0110/talmo/train_img/1407_A2LEBJJDE001258_1606104267519_4_LH.jpg")
+    # parser.add_argument('--mask_file', type=str, default= "/home/jerry0110/scalp_diagnosis/results2/1407_A2LEBJJDE001258_1606104267519_4_LH.png")
+    # parser.add_argument('--save_file', type=str, default= "/home/jerry0110/scalp_diagnosis/hair_masking/blur.png")
+    parser.add_argument('--img_path', type=str)
+    parser.add_argument('--mask_path', type=str)
+    parser.add_argument('--save_path', type=str)
+    parser.add_argument('--bring_img_to_pwd', type=bool, default= False)
     parser.add_argument('--do_dynamic_blur', type=bool, default= True)
-    parser.add_argument('--thr', type=int, default = 200)
-    parser.add_argument('--kernel_size', type=int, default = 11)
+    parser.add_argument('--thr', type=int, default = 400)
+    parser.add_argument('--kernel_size', type=int, default = 25)
     parser.add_argument('--sigma', type=int, default = 1)
     args = parser.parse_args()
     
-    main(args)
+    for im in tqdm(sorted(glob.glob(args.img_file+'/*.png'))):
+        im=im.split()[-1]
+        args.img_path=os.path.join(args.img_file,im)
+        args.save_path=os.path.join(args.save_file,im)
+        args.mask_path=os.path.join(args.mask_file,im)
+        main(args)
