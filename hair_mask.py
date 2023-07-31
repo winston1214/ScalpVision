@@ -3,9 +3,12 @@ import numpy as np
 from math import atan2, cos, sin, sqrt, pi
 import argparse 
 import multiprocessing
-import time
+import time,os
 import asyncio
-import tqdm,glob,os
+from tqdm import tqdm
+from glob import glob
+import warnings
+warnings.filterwarnings("ignore")
 
 # create gaussian kernel with k_size(filter size) and sigma
 def gaussian_kernel(k_size, sigma):
@@ -232,7 +235,7 @@ def dynamic_gaussian_filtering(img, mask, k_size=3,sigma=1):
         
         for p in procs:
             p.join()
-        print(len(shared_lst))
+        # print(len(shared_lst))
         error_set=set(shared_lst)
         for ch in range(0, channels):
             filtered_img[:,:,ch]=shared_out[ch]
@@ -309,15 +312,11 @@ def main(args):
     mask_path= args.mask_file
     mask=cv2.imread(mask_path,cv2.IMREAD_GRAYSCALE)
 
-    if args.bring_img_to_pwd:
-        cv2.imwrite("sample.png",img)
-        cv2.imwrite("mask.png",mask)
-
     # Apply threshold
-    ret, binary_map = cv2.threshold(mask, 1, 255, 0)
+    _, binary_map = cv2.threshold(mask, 1, 255, 0)
             
     # Get rid of noises (ex. big white spots that are not hair)
-    nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_map, None, None, None, 8, cv2.CV_32S)
+    nlabels, labels, stats, _ = cv2.connectedComponentsWithStats(binary_map, None, None, None, 8, cv2.CV_32S)
     # Get CC_STAT_AREA component as stats[label, COLUMN]
     areas = stats[1:, cv2.CC_STAT_AREA]
     result = np.zeros((labels.shape), np.uint8)
@@ -325,38 +324,30 @@ def main(args):
         if areas[i] >= args.thr:   # Keep
             result[labels == i + 1] = 255
     mask=result
-    
-    if args.bring_img_to_pwd:
-        cv2.imwrite("mask_filter.png",mask)
-    
-    s=time.time()
-    if args.do_dynamic_blur:
-        blur=dynamic_gaussian_filtering(img,mask,args.kernel_size,args.sigma)
-    else:
-        blur=gaussian_filtering(img,mask,args.kernel_size,args.sigma)
-    print(time.time()-s)
+
+    # s=time.time()
+    blur=dynamic_gaussian_filtering(img,mask,args.kernel_size,args.sigma)
+    # print(time.time()-s)
     cv2.imwrite(args.save_file,blur)
 
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--img_file', type=str, default= "/home/jerry0110/talmo/train_img/1407_A2LEBJJDE001258_1606104267519_4_LH.jpg")
-    # parser.add_argument('--mask_file', type=str, default= "/home/jerry0110/scalp_diagnosis/results2/1407_A2LEBJJDE001258_1606104267519_4_LH.png")
-    # parser.add_argument('--save_file', type=str, default= "/home/jerry0110/scalp_diagnosis/hair_masking/blur.png")
-    parser.add_argument('--img_path', type=str)
-    parser.add_argument('--mask_path', type=str)
-    parser.add_argument('--save_path', type=str)
-    parser.add_argument('--bring_img_to_pwd', type=bool, default= False)
-    parser.add_argument('--do_dynamic_blur', type=bool, default= True)
+    parser.add_argument('--img_file', type=str, default= "/home/jerry0110/talmo/train_img/1407_A2LEBJJDE001258_1606104267519_4_LH.jpg")
+    parser.add_argument('--mask_file', type=str, default= "/home/jerry0110/scalp_diagnosis/results2/1407_A2LEBJJDE001258_1606104267519_4_LH.png")
+    parser.add_argument('--save_file', type=str, default= "/home/jerry0110/scalp_diagnosis/hair_masking/blur.png")
+    parser.add_argument('--img_path', type=str,default= "/scratch/winston1214/talmo/train_img")
+    parser.add_argument('--mask_path', type=str, default= '/home/jerry0110/scalp_diagnosis/results')
+    parser.add_argument('--save_path', type=str,default='/home/jerry0110/scalp_diagnosis/hair_masking/re')
     parser.add_argument('--thr', type=int, default = 400)
-    parser.add_argument('--kernel_size', type=int, default = 25)
+    parser.add_argument('--kernel_size', type=int, default = 17)
     parser.add_argument('--sigma', type=int, default = 1)
     args = parser.parse_args()
     
-    for im in tqdm(sorted(glob.glob(args.img_file+'/*.png'))):
-        im=im.split()[-1]
-        args.img_path=os.path.join(args.img_file,im)
-        args.save_path=os.path.join(args.save_file,im)
-        args.mask_path=os.path.join(args.mask_file,im)
+    for im in tqdm(sorted(glob(os.path.join(args.mask_path,'*.png')))):
+        im=im.split('/')[-1]
+        args.img_file=os.path.join(args.img_path,im).replace(".png", '.jpg')
+        args.save_file=os.path.join(args.save_path,im)
+        args.mask_file=os.path.join(args.mask_path,im)
         main(args)
