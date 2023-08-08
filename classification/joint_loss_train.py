@@ -61,7 +61,7 @@ def joint_loss_function(preds, labels,pos_weight):
     # Combine the losses with appropriate weights (you can experiment with these weights)
     total_loss = presence_loss + weight * intensity_loss
 
-    return total_loss
+    return total_loss, presence_loss, intensity_loss
 
 def training(args):
     device = args.device
@@ -107,9 +107,10 @@ def training(args):
     train_dataloader = D.DataLoader(train_dataset,batch_size = BATCH_SIZE, shuffle=True, drop_last = False, num_workers=8) 
     valid_dataloader = D.DataLoader(valid_dataset,batch_size = BATCH_SIZE, shuffle=False,drop_last = False, num_workers=8)#
 
-    learning_rate = 1e-3
-    optimizer = optim.Adam(model.parameters(),lr = learning_rate, weight_decay=0.1)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-5)
+    learning_rate = 1e-4
+    optimizer = optim.Adam(model.parameters(),lr = learning_rate, weight_decay=1e-3)
+    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-7)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-7)
 
 
     # label smooth
@@ -131,22 +132,28 @@ def training(args):
 
     for e in range(EPOCH):
         running_loss = 0.0
+        running_presence = 0.0
+        running_intensity = 0.0
+        
         train_acc_list = []
         model.train()
         for idx,(img,label) in enumerate(tqdm(train_dataloader)):
             images = img.type(torch.FloatTensor).to(device)
             labels = label.type(torch.FloatTensor).to(device)
-            optimizer.zero_grad()
-
+            
             probs = model(images)
-            loss = joint_loss_function(probs, labels,pos_weight)
+            loss, presence, intensity = joint_loss_function(probs, labels,pos_weight)
             probs = torch.sigmoid(probs)
             preds = probs >= 0.5
+            
+            running_presence+= presence.item()
+            running_intensity+= intensity.item()
 
             running_loss += loss.item()
             loss.backward()
             optimizer.step()
-
+            optimizer.zero_grad()
+            
             preds  = preds.cpu().detach().numpy()
             labels = labels.cpu().detach().numpy()
 
@@ -155,8 +162,12 @@ def training(args):
             train_acc_list.append(batch_acc)
         train_acc = np.mean(train_acc_list)
         epoch_loss = running_loss/total_step
+        
+        epoch_presence = running_presence/total_step
+        epoch_intensity = running_intensity/total_step
 
         print(f'Epoch : [{e+1}/{EPOCH}], loss : {epoch_loss:.3f}, F1 : {train_acc:.3f}')
+        print(f'Epoch : [{e+1}/{EPOCH}], presence : {epoch_presence:.3f}, intensity : {epoch_intensity:.3f}')
 
         model.eval()
         valid_acc_list = []
@@ -187,14 +198,15 @@ def training(args):
                 pass
             torch.save(model.state_dict(),f'{args.save_dir}/best_{e}.pth')
         torch.save(model.state_dict(),f'{args.save_dir}/epoch_{e}.pth')
-
+    print(best_val_acc)
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir',type=str,default = '../scalp_aihub')
     parser.add_argument('--batch_size',type=int,default = 16)
     parser.add_argument('--device',type=str,default='cuda')
     parser.add_argument('--epoch',type=int,default = 50)
-    parser.add_argument('--weight',type=int,default = 1)
+    parser.add_argument('--weight',type=float,default = 1)
     parser.add_argument('--save_dir',type=str)
     parser.add_argument('--loss',type=str)
     parser.add_argument('--model',type=str)
@@ -202,8 +214,6 @@ if __name__ == '__main__':
     weight=args.weight
     print(f"joint loss ration = presence : intensity = 1 : ",weight)
     training(args)
-
-
 
 
 
