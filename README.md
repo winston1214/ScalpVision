@@ -1,11 +1,22 @@
 # ScalpVision: A Comprehensive Diagnostic System for Scalp Diseases and Alopecia with Unsupervised Masks and Diffusion Model
 <img src='https://github.com/winston1214/TALMO/blob/master/picture/ScalpVision.png'></img>
 
-## Installation
+## Installation & Preparation
+- DIffuseIT-M
+1. Please download <a href='https://drive.google.com/file/d/1kfCPMZLaAcpoIcvzTHwVVJ_qDetH-Rns/view?usp=sharing'>256x256 image generation weight</a> or <a href='https://openaipublic.blob.core.windows.net/diffusion/jul-2021/512x512_diffusion.pt'>512x512 image generation weight</a> in `checkpoints` folder
+2. Please install these modules.
 ```
-pip install requirements.txt
+pip install ftfy regex matplotlib lpips kornia opencv-python torch==1.9.0+cu111 torchvision==0.10.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+pip install color-matcher
+pip install git+https://github.com/openai/CLIP.git
 ```
-If you occur "module not found error", please contact @winston1214
+- SAM
+1. Please download <a href='https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth'>SAM weight file</a> (ViT-H SAM).
+2. Please install these modules.
+```
+pip install git+https://github.com/facebookresearch/segment-anything.git
+pip install opencv-python pycocotools matplotlib onnxruntime onnx
+```
 
 ## Dataset
 
