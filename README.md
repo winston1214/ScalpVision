@@ -3,7 +3,7 @@
 
 ## Installation & Preparation
 - DIffuseIT-M
-1. Please download <a href='https://drive.google.com/file/d/1kfCPMZLaAcpoIcvzTHwVVJ_qDetH-Rns/view?usp=sharing'>256x256 image generation weight</a> or <a href='https://openaipublic.blob.core.windows.net/diffusion/jul-2021/512x512_diffusion.pt'>512x512 image generation weight</a> in `checkpoints` folder
+1. Please download <a href='https://drive.google.com/file/d/1kfCPMZLaAcpoIcvzTHwVVJ_qDetH-Rns/view?usp=sharing'>256x256 image generation weight</a> or <a href='https://openaipublic.blob.core.windows.net/diffusion/jul-2021/512x512_diffusion.pt'>512x512 image generation weight</a> in `DiffuseIT-M/checkpoints` folder
 2. Please install these modules.
 ```
 pip install ftfy regex matplotlib lpips kornia opencv-python torch==1.9.0+cu111 torchvision==0.10.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html
