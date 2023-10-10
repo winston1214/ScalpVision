@@ -1,5 +1,5 @@
 # ScalpVision: A Comprehensive Diagnostic System for Scalp Diseases and Alopecia with Unsupervised Masks and Diffusion Model
-
+<img src='https://github.com/winston1214/TALMO/blob/master/picture/ScalpVision.png'></img>
 
 ## Installation
 ```
@@ -42,8 +42,30 @@ python train.py --data_dir $DATA_PATH --epoch $EPOCH --batch_size $BATCH_SIZE --
 ```
 
 ## Pseudo Image & Mask
-- <a href='https://drive.google.com/file/d/1GKpF2Z4Q74_inqkR91z5oW2tnK1x9hwN/view?usp=drive_link'>Pseudo Image & Mask for training U^2 Net</a>
+- <a href='https://drive.google.com/file/d/1GKpF2Z4Q74_inqkR91z5oW2tnK1x9hwN/view?usp=drive_link'>Pseudo Image & Mask</a> For training $\text{U}^2$-Net
 
 ## Weights
 - <a href='https://drive.google.com/file/d/11ISRNPL4K1kF7AS3Xy8-mDG9JDImWMhb/view?usp=drive_link'>Pseudo segmentation weights</a> ($\text{U}^{2}$-Net)
+
+## Reference
+```
+# U^2 Net
+@article{qin2020u2,
+  title={U2-Net: Going deeper with nested U-structure for salient object detection},
+  author={Qin, Xuebin and Zhang, Zichen and Huang, Chenyang and Dehghan, Masood and Zaiane, Osmar R and Jagersand, Martin},
+  journal={Pattern recognition},
+  volume={106},
+  pages={107404},
+  year={2020},
+  publisher={Elsevier}
+}
+
+# DiffuseIT
+@article{kwon2022diffusion,
+  title={Diffusion-based image translation using disentangled style and content representation},
+  author={Kwon, Gihyun and Ye, Jong Chul},
+  journal={arXiv preprint arXiv:2209.15264},
+  year={2022}
+}
+```
 
