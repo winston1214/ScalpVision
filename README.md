@@ -1,4 +1,8 @@
 # ScalpVision: A Comprehensive Diagnostic System for Scalp Diseases and Alopecia with Unsupervised Masks and Diffusion Model
+<a href='https://mirlab.yonsei.ac.kr/'>MIR Lab in Yonsei University</a> and PAI Lab in Ehwa Women's University
+
+<a href='https://github.com/winston1214'>Youngmin Kim*</a>, <a href='https://github.com/0110tpwls'>Saejin Kim*</a>, <a href='https://github.com/HoyeonM'>Hoyeon Moon</a>, Youngjae Yu, Junhyug Noh
+
 <img src='https://github.com/winston1214/TALMO/blob/master/picture/ScalpVision.png'></img>
 
 ## Installation & Preparation
