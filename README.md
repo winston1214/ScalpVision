@@ -1,5 +1,5 @@
 # ScalpVision: A Comprehensive Diagnostic System for Scalp Diseases and Alopecia with Unsupervised Masks and Diffusion Model
-
+<img src='https://github.com/winston1214/TALMO/blob/master/picture/ScalpVision.png'></img>
 
 ## Installation
 ```
