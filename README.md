@@ -40,6 +40,9 @@ If you occur "module not found error", please contact @winston1214
 python train.py --data_dir $DATA_PATH --epoch $EPOCH --batch_size $BATCH_SIZE --save_dir $SAVE_DIR
 ```
 
+## Pseudo Image & Mask
+- <a href='https://drive.google.com/file/d/1GKpF2Z4Q74_inqkR91z5oW2tnK1x9hwN/view?usp=drive_link'>Pseudo Image & Mask for training U^2 Net</a>
+
 ## Weights
 - <a href='https://drive.google.com/file/d/11ISRNPL4K1kF7AS3Xy8-mDG9JDImWMhb/view?usp=drive_link'>Pseudo segmentation weights</a> ($\text{U}^{2}$-Net)
 
