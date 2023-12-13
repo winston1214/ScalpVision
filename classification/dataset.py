@@ -7,7 +7,7 @@ import torchvision.transforms as T
 import torch.nn.functional as F
 import pandas as pd
 import os
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder
 import numpy as np
 
 
@@ -17,20 +17,80 @@ class ScalpDataset(D.Dataset):
         self.data = data
         self.transform = transform
         self.mode = mode
-        df = pd.read_csv(os.path.join(self.path,f'{self.mode}_label.csv'))
+        
+        if self.mode == 'train' or self.mode == 'val' or self.mode == 'test':
+            df = pd.read_csv(os.path.join(self.path,f'merge_{self.mode}_label.csv'))
+            self.img_path = os.path.join(self.path,self.mode + '_img')
+        elif self.mode == 'diffuse':
+            df = pd.read_csv(os.path.join(self.path,f'aug_merge_train_label.csv'))
+            self.img_path = os.path.join(self.path,'aug_train_img')
+        elif self.mode == 'diffit':
+            df = pd.read_csv(os.path.join(self.path,'diffit_aug_merge_train_label.csv'))
+            self.img_path = os.path.join(self.path,'diffit_aug_train_img')
+        
         df = df.sort_values('img_name').reset_index(drop=True) # re-sort
-        col = [f'value_{i}' for i in range(1,7)]
-        self.label = np.where(df[col].values>0,1,0)
-        # self.label = torch.concat([F.one_hot(torch.tensor(df[c].values)) for c in col],1)
-        self.img_path = os.path.join(self.path,self.mode,'images')
+        col = [f'class_{i}' for i in range(1,4)]
+        self.label = np.where(df[col].values>0,1,0) # disease label
+
+        ohe = OneHotEncoder()
+        ohe_array = ohe.fit_transform(df[col].astype(int)).toarray()
+        self.label2 = np.delete(ohe_array, [0, 4, 8], axis=1) # severity label       
+
+
         
     def __len__(self):
         return len(self.data)
+    
     def __getitem__(self, idx):
-        image = Image.open(os.path.join(self.img_path,self.data[idx]))
+        image = Image.open(os.path.join(self.img_path,self.data[idx])).convert('RGB')
+        # image = np.array(image)
         label = self.label[idx] 
+        label2 = self.label2[idx]
         
         if self.transform:
             image = self.transform(image)
+            # image = self.transform(image=image)['image']
+        return image, label, label2
+
+class ScalpDataset2(D.Dataset):
+    def __init__(self, path, data, mode,transform=None):
+        self.path = path
+        self.data = data
+        self.transform = transform
+        self.mode = mode
         
-        return image, label
+        if self.mode == 'train' or self.mode == 'val' or self.mode == 'test':
+            df = pd.read_csv(os.path.join(self.path,f'merge_{self.mode}_label.csv'))
+            self.img_path = os.path.join(self.path,self.mode + '_img')
+        elif self.mode == 'diffuse':
+            df = pd.read_csv(os.path.join(self.path,f'aug_merge_train_label.csv'))
+            self.img_path = os.path.join(self.path,'aug_train_img')
+        elif self.mode == 'diffit':
+            df = pd.read_csv(os.path.join(self.path,'diffit_aug_merge_train_label.csv'))
+            self.img_path = os.path.join(self.path,'diffit_aug_train_img')
+        
+        df = df.sort_values('img_name').reset_index(drop=True) # re-sort
+        col = [f'class_{i}' for i in range(1,4)]
+        self.label = np.where(df[col].values>0,1,0) # disease label
+
+        ohe = OneHotEncoder()
+        ohe_array = ohe.fit_transform(df[col].astype(int)).toarray()
+        self.dand_label = ohe_array[:,:4]
+        self.sebum_label = ohe_array[:,4:8]
+        self.ery_label = ohe_array[:,8:]
+        
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        image = Image.open(os.path.join(self.img_path,self.data[idx])).convert('RGB')
+        # image = np.array(image)
+        label = self.label[idx] 
+        dand_label = self.dand_label[idx]
+        seb_label = self.sebum_label[idx]
+        ery_label = self.ery_label[idx]
+        
+        if self.transform:
+            image = self.transform(image)
+            # image = self.transform(image=image)['image']
+        return image, label, dand_label, seb_label, ery_label
