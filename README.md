@@ -46,6 +46,19 @@ Finally, you can get final masks, $M$.
 
 ```python segmentation/make_final_mask.py```
 
+## Alopecia Prediction
+- Hair thickness estimation
+  
+```python thickness/calculate_hair_thickness.py --img_folder $source_image --save_path $save_folder```
+
+- Hair counting
+
+```python thickness/calculate_hair_count.py --img_folder $source_image --label_csv $label_csv --save_path $save_folder```
+
+- Alopecia Prediction
+
+```python thickness/alopecia_prediction.py```
+
 ## DiffuseIT-M
 ```
 cd DiffuseIT-M
