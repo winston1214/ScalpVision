@@ -1,4 +1,4 @@
-# ScalpVision: A Comprehensive Diagnostic System for Scalp Diseases and Alopecia with Unsupervised Masks and Diffusion Model
+# Scalp Diagnostic System With Label-Free Segmentation and Training-Free Image Translation
 
 <img src='https://github.com/winston1214/TALMO/blob/master/picture/ScalpVision.png'></img>
 
@@ -23,6 +23,29 @@ pip install opencv-python pycocotools matplotlib onnxruntime onnx
 
 - <a href='https://aihub.or.kr/aihubdata/data/view.do?currMenu=&topMenu=&aihubDataSe=realm&dataSetSn=216'>Dataset Download</a>
 
+## Hair Segmentation
+※ Please check your workspace directory in code
+
+First, you can train $\text{U}^{2}$-Net.
+
+```python segmentation/u2net_train.py```
+
+Next, run this prompt with your pretrained weight file and you can get segmentation labels, $\hat{M}$.
+
+```python segmentation/u2net_test.py```
+
+Next, run this prompt to get point prompt for SAM guidance.
+
+```python segmentation/sam_guide.py```
+
+Next, you can get $M_\text{AP}$.
+
+```python segmentation/sam_predict.py```
+
+Finally, you can get final masks, $M$.
+
+```python segmentation/make_final_mask.py```
+
 ## DiffuseIT-M
 ```
 cd DiffuseIT-M
@@ -34,9 +57,6 @@ python main.py -i $source  --output_path $output_path -tg $target --diff_iter 10
 ```
 python train.py --data_dir $DATA_PATH --epoch $EPOCH --batch_size $BATCH_SIZE --save_dir $SAVE_DIR
 ```
-
-## Pseudo Image & Mask
-- <a href='https://drive.google.com/file/d/1GKpF2Z4Q74_inqkR91z5oW2tnK1x9hwN/view?usp=drive_link'>Pseudo Image & Mask</a> For training $\text{U}^2$-Net
 
 ## Weights
 - <a href='https://drive.google.com/file/d/11ISRNPL4K1kF7AS3Xy8-mDG9JDImWMhb/view?usp=drive_link'>Pseudo segmentation weights</a> ($\text{U}^{2}$-Net)
