@@ -49,17 +49,18 @@ Finally, you can get final masks, $M$.
 ## Alopecia Prediction
 - Hair thickness estimation
   
-```python thickness/calculate_hair_thickness.py --img_folder $source_image --save_path $save_folder```
+```python alopecia/calculate_hair_thickness.py --img_folder $source_image --save_path $save_folder```
 
 - Hair counting
 
-```python thickness/calculate_hair_count.py --img_folder $source_image --label_csv $label_csv --save_path $save_folder```
+```python alopecia/calculate_hair_count.py --img_folder $source_image --label_csv $label_csv --save_path $save_folder```
 
 - Alopecia Prediction
 
-```python thickness/alopecia_prediction.py```
+```python alopecia/alopecia_prediction.py```
 
 ## DiffuseIT-M
+
 ```
 cd DiffuseIT-M
 python main.py -i $source  --output_path $output_path -tg $target --diff_iter 100 --timestep_respacing 200 --skip_timesteps 80 --model_output_size 256 --init_mask $mask --use_range_restart True --use_colormatch True --use_noise_aug_all True --iterations_num 1 --output_file $output_file_name
