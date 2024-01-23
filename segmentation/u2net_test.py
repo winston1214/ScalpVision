@@ -59,7 +59,7 @@ def main():
 
 
     # image_dir = '../../../scalp_aihub/sample/'
-    image_dir = '../../western_scalp/'
+    image_dir = '../../scalp_img/'
     prediction_dir = '../../../scalp_aihub/sample_result/'
     model_dir = 'saved_models/new_seg_ckpt/tar_min.pth'
 
