@@ -305,9 +305,9 @@ def main(args,im):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--img_folder',type=str, default="/scratch/winston1214/talmo/ensemble_train")
-    parser.add_argument('--label_csv',type=str,default="/home/jerry0110/scalp_diagnosis/data/alopecia.csv")
-    parser.add_argument('--save_path',type=str,default="/scratch/jerry0110/talmo/hairline_count/")
+    parser.add_argument('--img_folder',type=str, default="ensemble_train")
+    parser.add_argument('--label_csv',type=str,default="alopecia.csv")
+    parser.add_argument('--save_path',type=str,default="hairline_count/")
     parser.add_argument('--start',type=int,default=0)
     parser.add_argument('--end',type=int,default=20000)
     parser.add_argument('--draw_lines',type=int, default=0)

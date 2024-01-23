@@ -11,9 +11,7 @@ warnings.filterwarnings('ignore')
 
 from sklearn.metrics import f1_score, accuracy_score
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 
 
 # mode = 'train'
@@ -24,7 +22,7 @@ def thickness_value(mode, category):
     train_csv = 'hair_loss_train.csv'
     test_csv = 'hair_loss_test.csv'
     train = sorted(glob.glob(f'../scalp_aihub/thickness/{category}/thickness_{mode}/*.npy'))
-    df = pd.DataFrame(columns = ['img_name', 'iqr_median','iqr_mean','mean','median','area'])
+    df = pd.DataFrame(columns = ['img_name', 'iqr_median','iqr_mean','mean','median'])
     image_path = f'../scalp_aihub/{category}_result/{category}_{mode}'
     iqr_median = []
     iqr_mean = []
@@ -32,13 +30,10 @@ def thickness_value(mode, category):
     mean = []
     img_name_ls = []
     length = []
-    area_ls = []
     for i in tqdm(train):
         thicknesses_sort = np.load(i)
         img_name = i.split('/')[-1].replace('npy','jpg')
-        img = cv2.imread(os.path.join(image_path, img_name),0)
-        area = np.sum(img==255)/(640*480)
-        area_ls.append(area)
+
         length.append(len(thicknesses_sort))
         if len(thicknesses_sort) == 0:
             img_name_ls.append(img_name)
@@ -66,11 +61,10 @@ def thickness_value(mode, category):
     df['iqr_mean'] = iqr_mean
     df['iqr_median'] = iqr_median
     df['length'] = length
-    df['area'] = area_ls
 
 
     tr = pd.read_csv(f'../scalp_aihub/{mode}_label.csv')
-    tmp = pd.merge(tr,df,on='img_name')[['img_name','iqr_median','iqr_mean','mean','median','length','value_6','area']]
+    tmp = pd.merge(tr,df,on='img_name')[['img_name','iqr_median','iqr_mean','mean','median','length','value_6']]
     mer = pd.read_csv(f'../scalp_aihub/merge_{mode}_label.csv')
     final = pd.merge(tmp, mer, on='img_name')
     if mode == 'train':
@@ -89,12 +83,12 @@ def alopeica_predict(train_csv, test_csv):
     test_x = test.drop(['value_6','img_name'], axis = 1)
     test_y = test['value_6'].values.ravel()
 
-    rf = RandomForestClassifier(random_state=42)
-    rf.fit(train_x, train_y)
-    pred = rf.predict(test_x)
+    gra = GradientBoostingClassifier(learning_rate=0.01, max_depth=5, n_estimators=300)
+    gra.fit(train_x, train_y)
+    pred = gra.predict(test_x)
 
-    print(f1_score(pred, test_y, average='weighted'))
-    print(accuracy_score(pred, test_y))
+    print(f1_score(test_y, pred, average='weighted'))
+    print(accuracy_score(test_y, pred))
 
 
 if __name__ == '__main__':
