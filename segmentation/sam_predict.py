@@ -42,10 +42,10 @@ for full_name in tqdm(points.keys()):
             xy = [np.random.randint(640), np.random.randint(480)]
             if xy not in tmp:
                 neg_list.append(xy)
-        neg_arr = np.array(neg_list) # 두피
+        neg_arr = np.array(neg_list) # scalp
 
-        input_point = tmp[rand_idx] # 머리카락
-        neg_point = tmp[list(set([i for i in range(len(tmp))]) - set(rand_idx))] # 머리카락
+        input_point = tmp[rand_idx] # hair
+        neg_point = tmp[list(set([i for i in range(len(tmp))]) - set(rand_idx))] # hair
         # input_point_tmp = np.append(input_point, neg_point)
         # final_point = np.append(input_point_tmp, neg_arr).reshape(-1,2)
 
