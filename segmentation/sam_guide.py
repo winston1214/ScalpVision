@@ -4,7 +4,6 @@ from math import atan2, cos, sin, sqrt, pi
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import OPTICS, cluster_optics_dbscan
-import hdbscan
 from tqdm import tqdm
 from glob import glob
 
@@ -216,8 +215,8 @@ def cluster(img_path,im):
     
     return pts_group, bbox_group
 
-mask_dir="/scratch/winston1214/talmo/seg_train"
-save_json_dir="/home/jerry0110/talmo/"
+mask_dir="datasets/seg_train"
+save_json_dir="datasets/"
 
 
 file_dict={}
@@ -233,7 +232,7 @@ for im in tqdm(sorted(glob(os.path.join(mask_dir, '*.png')))):
                 bbox_dict[im]=bbox
         
 
-with open(os.path.join(save_json_dir, 'train_seg_points.json'),'w') as json_file: #'/home/jerry0110/talmo/train_seg_points.json', 'w') as json_file:
+with open(os.path.join(save_json_dir, 'train_seg_points.json'),'w') as json_file:
     json.dump(file_dict, json_file)
 
 with open(os.path.join(save_json_dir, 'train_bbox_points.json'),'w') as json_file:
