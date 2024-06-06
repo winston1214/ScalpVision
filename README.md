@@ -1,5 +1,5 @@
 # ScalpVision
-ScalpVision: A Comprehensive Diagnostic System for Scalp Diseases and Alopecia with Unsupervised Masks and Diffusion Model
+Scalp Diagnostic System With Label-Free Segmentation and Training-Free Image Translation
 
 
 **Comming soon..**
