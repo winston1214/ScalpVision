@@ -1,6 +1,6 @@
 # Scalp Diagnostic System With Label-Free Segmentation and Training-Free Image Translation
 
-<img src='https://github.com/winston1214/TALMO/blob/master/picture/ScalpVision.png'></img>
+<img src='https://github.com/winston1214/ScalpVision/blob/master/picture/ScalpVision.png'></img>
 
 ## Installation & Preparation
 - DIffuseIT-M
