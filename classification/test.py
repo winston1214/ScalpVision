@@ -219,8 +219,8 @@ def class_predict(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ckpt',type=str,default = '/scratch/winston1214/scalp_classification/xception_baseline/best_2.pth')
-    parser.add_argument('--data_dir',type=str,default = '/home/winston1214/datasets/talmo')
+    parser.add_argument('--ckpt',type=str,default = 'scalp_classification/xception_baseline/best_2.pth')
+    parser.add_argument('--data_dir',type=str)
     parser.add_argument('--batch_size',type=int,default = 128)
     parser.add_argument('--model', type=str)
     parser.add_argument('--save_csv', type=str)
