@@ -21,7 +21,7 @@ def main(start_idx, end_idx):
     seg_src_path = './reverse_ensemble_train/'
     csv_path = './comb_csv'
 
-    diffuse_csv_file = pd.read_csv('/scratch/winston1214/talmo/diffuse_aug_list.csv').sort_values('src_img_name')
+    diffuse_csv_file = pd.read_csv('./diffuse_aug_list.csv').sort_values('src_img_name')
 
     src_label = []
     target_label = []
