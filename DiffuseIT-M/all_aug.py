@@ -16,10 +16,10 @@ def main(start_idx, end_idx):
     np.random.seed(42)
 
 
-    img_src_path = '/scratch/winston1214/talmo/train_img/'
-    img_dst_path = '/home/winston1214/ensemble_diffuse_output/'
-    seg_src_path = '/scratch/winston1214/talmo/reverse_ensemble_train/'
-    csv_path = '/scratch/winston1214/talmo/comb_csv'
+    img_src_path = './train_img/'
+    img_dst_path = './ensemble_diffuse_output/'
+    seg_src_path = './reverse_ensemble_train/'
+    csv_path = './comb_csv'
 
     diffuse_csv_file = pd.read_csv('/scratch/winston1214/talmo/diffuse_aug_list.csv').sort_values('src_img_name')
 
