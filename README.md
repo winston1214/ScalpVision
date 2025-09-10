@@ -7,6 +7,15 @@
 [Youngjae Yu](https://yj-yu.github.io/home/),
 [Junhyeok Noh](https://junhyug.github.io/)
 
+<p align="center">
+  <a href="https://arxiv.org/abs/2406.17254">
+    <img src="https://img.shields.io/badge/arXiv-2406.17254-B31B1B.svg?logo=arxiv">
+  </a>
+  <a href="https://0110tpwls.github.io/scalpvision25/">
+    <img src="https://img.shields.io/badge/🌐-Project%20Page-brightgreen">
+  </a>
+</p>
+
 <img src='https://github.com/winston1214/ScalpVision/blob/master/picture/ScalpVision.png'></img>
 
 ## Installation & Preparation
