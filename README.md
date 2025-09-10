@@ -1,4 +1,11 @@
-# Scalp Diagnostic System With Label-Free Segmentation and Training-Free Image Translation
+# Scalp Diagnostic System With Label-Free Segmentation and Training-Free Image Translation (MICCAI 2025)
+
+**Authors:**
+**[Youngmin Kim*](https://winston1214.github.io)** ,
+[Saejin Kim*](https://0110tpwls.github.io/),
+[Hoyeon Moon](https://github.com/HoyeonM),
+[Youngjae Yu](https://yj-yu.github.io/home/),
+[Junhyeok Noh](https://junhyug.github.io/)
 
 <img src='https://github.com/winston1214/ScalpVision/blob/master/picture/ScalpVision.png'></img>
 
@@ -46,7 +53,9 @@ Finally, you can get final masks, $M$.
 
 ```python segmentation/make_final_mask.py```
 
-## Alopecia Prediction
+## Alopecia Prediction 
+⚠️ Note: This module is implemented in code for practical use, but not described in the paper.
+
 - Hair thickness estimation
   
 ```python alopecia/calculate_hair_thickness.py --img_folder $source_image --save_path $save_folder```
