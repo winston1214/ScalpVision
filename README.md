@@ -91,7 +91,7 @@ python train.py --data_dir $DATA_PATH --epoch $EPOCH --batch_size $BATCH_SIZE --
 ```
 
 ## Weights
-- <a href='https://drive.google.com/file/d/11ISRNPL4K1kF7AS3Xy8-mDG9JDImWMhb/view?usp=sharing'>Pseudo segmentation weights</a> ($\text{U}^{2}$-Net)
+- <a href='https://huggingface.co/winston1214/scalpvision_hair_segmentation'>Pseudo segmentation weights</a> ($\text{U}^{2}$-Net, before SAM refinement; used with `segmentation/u2net_test.py`)
 
 ## How to Cite
 ```
